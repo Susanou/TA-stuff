@@ -1,7 +1,5 @@
 import argparse
 import sys
-import numpy as np
-import math
 import pandas as pd
 import os
 
@@ -56,6 +54,7 @@ def get_data(df, team):
     under = 0
 
     for k,v in df.iterrows():
+        #print(v)
         if v.iloc[0] == team:
             inov += v.iloc[1]
             fun += v.iloc[2]
