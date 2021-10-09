@@ -2,6 +2,9 @@ import argparse
 import sys
 import pandas as pd
 import os
+import re
+import numpy as np
+import json
 
 class colors:
     '''Colors class:reset all colors with colors.reset; two
@@ -45,65 +48,72 @@ class colors:
         cyan = '\033[46m'
         lightgrey = '\033[47m'
 
-def get_data(df, team):
+def get_data(df, c):
 
-    total = 0
-    inov = 0
-    fun = 0
-    time = 0
-    under = 0
+    students = {}
 
-    for k,v in df.iterrows():
-        #print(v)
-        if v.iloc[0] == team:
-            inov += v.iloc[1]
-            fun += v.iloc[2]
-            time += v.iloc[3]
-            under += v.iloc[4]
-            total += 1
-        elif v.iloc[5] == team:
-            inov += v.iloc[6]
-            fun += v.iloc[7]
-            time += v.iloc[8]
-            under += v.iloc[9]
-            total += 1
-        elif v.iloc[10] == team:
-            inov += v.iloc[11]
-            fun += v.iloc[12]
-            time += v.iloc[13]
-            under += v.iloc[14]
-            total += 1
-        elif v.iloc[15] == team:
-            inov += v.iloc[16]
-            fun += v.iloc[17]
-            time += v.iloc[18]
-            under += v.iloc[19]
-            total += 1
-    
-    print(colors.fg.cyan + f"Innovation {(inov/total):.2f}/10")
-    print(colors.fg.green + f"Fun {(fun/total):.2f}/10")
-    print(colors.fg.red + f"Time {(time/total):.2f}/10")
-    print(colors.fg.orange + f"Understanding {(under/total):.2f}/10")
-    print(colors.reset)
+    regex = r"(.*) \[(.*)\]$"
+
+    for name, grades in df.iteritems():
+        match = re.search(regex, name)
+        #print(match)
+        if match != None:
+            if match.group(2) not in students:
+                students[match.group(2)] = {}
+
+            notes = []
+
+            for g in grades:
+                if g == "Excellent":
+                    notes.append(4)
+                elif g == "Good":
+                    notes.append(3)
+                elif g == "Fair":
+                    notes.append(2)
+                elif g == "Poor":
+                    notes.append(1)
+            
+            students[match.group(2)][match.group(1)] = np.average(notes)
+        else:
+            comments = grades.fillna('').tolist()
+        
+
+    print(json.dumps(students, sort_keys=True, indent = 2))
+    if c:
+        print('\n'.join(comments))
+
+
+
+
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="TA grading programm. Gives the average of each Concept, Fun, Time to implement, and understanding after presentation")
     
-    parser.add_argument('t', type = int, help='team number that you want to inspect')
+    parser.add_argument('-r', '--recursive', action='store_true', default=False, help='Go through all files and compute all statistics at once')
+    parser.add_argument('-c', '--comment', action='store_true', default=False, help='display the comments')
     parser.add_argument('path', type = str, help='CSV file to inspect')
 
     args = parser.parse_args()
 
-    if args.t and os.path.exists(args.path):
+    if args.recursive and os.path.exists(args.path):
+            print('Start data collection')
+            for file in os.listdir(args.path):
+                df = pd.read_csv(os.path.join(args.path, file))
+
+                #Sanitizing the DataFrame
+                df.drop(df.iloc[:, 0:3], axis=1, inplace=True)
+                get_data(df, args.comment)
+
+    elif os.path.exists(args.path):
         df = pd.read_csv(args.path)
 
         #Sanitizing the DataFrame
-        df.drop(df.iloc[:, [0, 1, 2, 3, 5, 9, 11, 13, 18, 19, 21, 26, 27, 29, 33, 35, 36, 37, 38, 39]], axis=1, inplace=True)
+        df.drop(df.iloc[:, 0:3], axis=1, inplace=True)
 
-        df.drop(df[~((df['Which group are you reviewing?'] == args.t) | (df['Which group are you reviewing?.1'] ==args.t) | (df['Which group are you reviewing?.2'] ==args.t) | (df['Which group are you reviewing?.3'] ==args.t))].index, inplace=True)
+        
 
-        get_data(df, args.t)
+        get_data(df, args.comment)
 
 
     else:
