@@ -78,10 +78,10 @@ def get_data(df, c):
             comments = grades.fillna('').tolist()
         
 
-    print(json.dumps(students, sort_keys=True, indent = 2))
     if c:
         print('\n'.join(comments))
-
+    else:
+        print(json.dumps(students, sort_keys=True, indent = 2))
 
 
 
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="TA grading programm. Gives the average of each Concept, Fun, Time to implement, and understanding after presentation")
     
     parser.add_argument('-r', '--recursive', action='store_true', default=False, help='Go through all files and compute all statistics at once')
-    parser.add_argument('-c', '--comment', action='store_true', default=False, help='display the comments')
+    parser.add_argument('-c', '--comment', action='store_true', default=False, help='display the comments instead')
     parser.add_argument('path', type = str, help='CSV file to inspect')
 
     args = parser.parse_args()
